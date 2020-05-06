@@ -15,10 +15,10 @@ if ~exist('nrmtype', 'var') || isempty(nrmtype)
 end
 
 if nargout == 2	
-	[G, F] = hodlr_cr(A2, A1, A0, tol, debug, nrmtype);
+	[G, F] = hss_cr(A2, A1, A0, tol, debug, nrmtype);
 elseif nargout == 1
-	%G = hodlr_cr(A2, A1, A0, tol, debug, nrmtype);
-	G = hodlr_dac_uqme(A2, A1, A0, tol, debug, nrmtype);
+	%G = hss_cr(A2, A1, A0, tol, debug, nrmtype);
+	G = hss_dac_uqme(A2, A1, A0, tol, debug, nrmtype);
 else
 	error('UQME:: Unvalid number of output arguments')
 end

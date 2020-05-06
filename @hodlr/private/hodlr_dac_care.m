@@ -1,4 +1,4 @@
-function X = dac_care(A, B, C, spA, tol, debug, nrmtype)
+function X = hodlr_dac_care(A, B, C, spA, tol, debug, nrmtype)
 % solve the CARE A'X + X A - X B B' X + C = 0 with a divide and conquer method
 %
 %  Assumptions:
@@ -19,9 +19,9 @@ end
 if ~exist('spA','var') 
     spA = [];
 end
-n = size(A, 1);
+[n, m] = size(A);
 X = hodlr();
-X.sz = [n n];
+X.sz = [n m];
 
 if  ~isempty(A.F) || ~isempty(C.F)
 	if ~exist('icare', 'file')
@@ -32,17 +32,17 @@ if  ~isempty(A.F) || ~isempty(C.F)
 	end
 
 	if debug
-        	fprintf('Base case: Dimension = %d, Residue = %e\n', size(A, 1), norm(A' * X + X * A - X * B * B' * X + C )/norm(X));
+        	fprintf('Base case: Dimension = %d, Residual = %e\n', size(A, 1), norm(A' * X + X * A - X * B * B' * X + C )/norm(X));
     	end
 else
 	nn = size(A.A11, 1);
 	% Solve the block diagonal equation via recursion
 	if issparse(spA)
-        	X = blkdiag( dac_care(A.A11, B(1:nn, :), C.A11, spA(1:nn, 1:nn),tol, debug, nrmtype),...
-                     dac_care(A.A22, B(nn + 1:end, :), C.A22, spA(nn + 1:end, nn + 1:end), tol, debug, nrmtype) );
+        	X = blkdiag( hodlr_dac_care(A.A11, B(1:nn, :), C.A11, spA(1:nn, 1:nn),tol, debug, nrmtype),...
+                     hodlr_dac_care(A.A22, B(nn + 1:end, :), C.A22, spA(nn + 1:end, nn + 1:end), tol, debug, nrmtype) );
 	else
-		X = blkdiag( dac_care(A.A11, B(1:nn, :), C.A11, [],tol, debug, nrmtype),...
-                     dac_care(A.A22, B(nn + 1:end, :), C.A22, [], tol, debug, nrmtype) );
+		X = blkdiag( hodlr_dac_care(A.A11, B(1:nn, :), C.A11, [],tol, debug, nrmtype),...
+                     hodlr_dac_care(A.A22, B(nn + 1:end, :), C.A22, [], tol, debug, nrmtype) );
 	end
 
         % Build low-rank representation of the correction equation
@@ -67,13 +67,13 @@ else
 
 			ATstruct = struct(...
         	        'solve', @(nu, mu, x) sparse_woodbury_solve(nu, mu, UA', LA', qA, ipA, x, XB, B), ...
-        	        'multiply', @(rho, eta, x) rho * A' * x + rho * XB * (B' * x) - eta * x, ...
+        	        'multiply', @(rho, eta, x) rho * spA' * x + rho * XB * (B' * x) - eta * x, ...
         	        'isreal', isreal(spA), ...
         	        'nrm', normest(spA, 1e-2));
 		else
 			ATstruct = ek_struct(A' + hodlr('low-rank', XB, B)); % Build the structure exploiting the HODLR structure
 		end
-		[dXU, ~, dUZ,~, rkres] = ek_care(ATstruct, B, u, 300, tol, debug, nrmtype, 'kernel', D); % Solve the CARE with low-rank rhs
+		[dXU, ~, dUZ,~, rkres] = ek_care(ATstruct, B, u, min(1000, n), tol, debug, nrmtype, 'kernel', D); % Solve the CARE with low-rank rhs
     	else
         	dXU = []; dUZ = [];
     	end
@@ -81,11 +81,11 @@ else
         	if debug
             		dX = hodlr('low-rank', dXU * dUZ, dXU); F = hodlr('low-rank', B, B);
             		Ac = A - F * X; Q = u * D * u';
-            		fprintf('Correction eq: Dimension = %d, Rank of the sol. = %d, Residue = %e\n', size(A, 1), size(dXU, 2), norm(Ac' * dX + dX * Ac - dX * F * dX + Q) / norm(dX))
+            		fprintf('Correction eq: Dimension = %d, Rank of the sol. = %d, Residual = %e\n', size(A, 1), size(dXU, 2), norm(Ac' * dX + dX * Ac - dX * F * dX + Q) / norm(dX))
         	end
 		X = X + hodlr('low-rank', dXU * dUZ, dXU);
 		if debug 
-        		fprintf('Complete equation: Dimension = %d, HODLR rank sol. = %d, Residue = %e\n', size(A, 1), hodlrrank(X), norm(A' * X + X * A - X * F * X + C, 1e-2) / norm(X));
+        		fprintf('Complete equation: Dimension = %d, HODLR rank sol. = %d, Residual = %e\n', size(A, 1), hodlrrank(X), norm(A' * X + X * A - X * F * X + C, 1e-2) / norm(X));
     		end
     	end
 end

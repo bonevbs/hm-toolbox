@@ -13,7 +13,7 @@ if ~exist('debug', 'var') || isempty(debug)
 	debug = false;
 end
 if ~exist('tol', 'var') || isempty(tol)
-	tol = hodlroption('threshold');
+	tol = hssoption('threshold');
 end
 if ~exist('nrmtype', 'var') || isempty(nrmtype)
 	nrmtype = 2;
@@ -22,6 +22,6 @@ if ~exist('spA', 'var')
 	spA = [];
 end
 	
-X = hodlr_dac_care(A, B, C, spA, tol, debug, nrmtype);
+X = hss_dac_care(A, B, C, spA, tol, debug, nrmtype);
 end
 
