@@ -43,7 +43,7 @@ for j = 1 : min(m, n - 1)
 			sqrt(mx), sqrt(v(1)), sqrt(v(1)) * tol * sqrt(n));
     end
     
-    switch hodlroption('norm')
+    switch hssoption('norm')
         case 2
             if relative
                 stop = sqrt(mx) < sqrt(v(1)) / sqrt(n-j) * tol;
